@@ -140,8 +140,17 @@ ok "Domain: $VERNISSAGE_DOMAIN  →  proxy: $PROXY_BIND:$PROXY_PORT  (project: $
 # ---------------------------------------------------------------------------
 section "Directories"
 
-mkdir -p "$ROOT_DIR/data/postgres" "$ROOT_DIR/data/redis" "$ROOT_DIR/data/minio" "$ROOT_DIR/backups" "$NGINX_DIR"
-chmod 700 "$ROOT_DIR/data" "$ROOT_DIR/backups"
+# Only create what is missing – existing directories may belong to container users.
+for dir in data data/postgres data/redis data/minio backups nginx; do
+    [[ -d "$ROOT_DIR/$dir" ]] && continue
+    mkdir "$ROOT_DIR/$dir" 2>/dev/null \
+        || die "Cannot create $dir/ as user '$(id -un)'. Check the ownership with: ls -la $ROOT_DIR $ROOT_DIR/data
+  If data/ belongs to root, Docker created it because 'docker compose up' ran before ./init.sh.
+  On a fresh installation fix it with: docker compose down && sudo rm -rf $ROOT_DIR/data"
+done
+for dir in data backups; do
+    chmod 700 "$ROOT_DIR/$dir" 2>/dev/null || warn "Could not restrict the permissions of $dir/ (owned by another user)."
+done
 ok "data/, backups/ and nginx/ are in place."
 
 # ---------------------------------------------------------------------------
