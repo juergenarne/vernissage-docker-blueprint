@@ -20,8 +20,15 @@ for cmd in openssl curl; do
 done
 
 if ! detect_docker; then
-    warn "Docker Engine and/or the Compose plugin are missing or not reachable."
-    if command -v apt-get >/dev/null 2>&1 && confirm "Install Docker now via apt (docker.io + docker-compose-v2)?" y; then
+    if command -v docker >/dev/null 2>&1; then
+        # Docker exists but is unusable – never install a second Docker on top of it.
+        warn "Docker is installed but not reachable, or the Compose plugin is missing."
+        info "Check: sudo systemctl status docker  ·  docker compose version"
+        info "Compose plugin for Docker CE: sudo apt install docker-compose-plugin"
+        die "Nothing has been changed. Please fix Docker and run ./init.sh again."
+    fi
+    warn "Docker is not installed."
+    if command -v apt-get >/dev/null 2>&1 && confirm "Install Docker now via apt (docker.io + docker-compose-v2)?" n; then
         sudo apt-get update
         sudo apt-get install -y docker.io docker-compose-v2
         sudo systemctl enable --now docker
